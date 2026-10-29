@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f7a75">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Agent">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%231f7a75'/%3E%3Ccircle cx='50' cy='50' r='16' fill='none' stroke='white' stroke-width='7'/%3E%3Ccircle cx='50' cy='50' r='5' fill='white'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+:root {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --ink: #1b2433;
+  --muted: #647086;
+  --line: #d9dfe9;
+  --accent: #1f7a75;
+  --accent-ink: #ffffff;
+  --chip: #e1efee;
+  --danger: #b4372f;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111722;
+    --surface: #1a2332;
+    --ink: #e6ebf3;
+    --muted: #8d99ae;
+    --line: #2a3548;
+    --accent: #3fb3ab;
+    --accent-ink: #0b1a19;
+    --chip: #1f3836;
+    --danger: #ef7d74;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  overscroll-behavior: none;
+}
+header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+header h1 { font-size: 17px; margin: 0; font-weight: 650; flex: 1; letter-spacing: .01em; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.dot.ready { background: var(--accent); }
+.icon-btn {
+  border: 0; background: transparent; color: var(--ink);
+  width: 40px; height: 40px; border-radius: 12px; font-size: 20px; cursor: pointer;
+}
+.icon-btn:hover { background: var(--bg); }
+.icon-btn:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+#log {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.msg { max-width: 86%; padding: 10px 14px; border-radius: 18px; white-space: pre-wrap; word-wrap: break-word; }
+.msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 6px; }
+.msg.bot { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 6px; }
+.msg.err { align-self: flex-start; color: var(--danger); border: 1px solid var(--danger); background: transparent; border-radius: 12px; }
+.tool {
+  align-self: flex-start; font-size: 13px; color: var(--muted);
+  background: var(--chip); padding: 4px 10px; border-radius: 10px;
+}
+.empty { margin: auto; text-align: center; color: var(--muted); max-width: 300px; }
+.empty b { color: var(--ink); display: block; font-size: 18px; margin-bottom: 6px; }
+.empty .try { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.empty .try button {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 10px 14px; border-radius: 12px; font: inherit; font-size: 14px; cursor: pointer; text-align: left;
+}
+.typing { align-self: flex-start; color: var(--muted); font-size: 14px; padding-left: 6px; }
+form#composer {
+  display: flex; gap: 8px; align-items: flex-end;
+  padding: 10px 12px; background: var(--surface); border-top: 1px solid var(--line);
+}
+textarea#input {
+  flex: 1; resize: none; max-height: 140px; min-height: 44px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  border-radius: 22px; padding: 10px 16px; font: inherit;
+}
+#send {
+  width: 44px; height: 44px; border-radius: 50%; border: 0;
+  background: var(--accent); color: var(--accent-ink); font-size: 20px; cursor: pointer;
+}
+#send:disabled { opacity: .45; }
+
+dialog {
+  border: 0; border-radius: 20px; padding: 0; width: min(92vw, 440px);
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+dialog::backdrop { background: rgba(10,15,25,.55); }
+.sheet { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.sheet h2 { margin: 0; font-size: 18px; }
+.sheet label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; }
+.sheet label small { font-weight: 400; color: var(--muted); }
+.sheet input, .sheet textarea {
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  border-radius: 12px; padding: 10px 12px; font: inherit; width: 100%;
+}
+.row { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 10px 16px; border-radius: 12px; font: inherit; cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.danger { color: var(--danger); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot" title="Key status"></span>
+  <h1>My Agent</h1>
+  <button class="icon-btn" id="clearBtn" aria-label="New chat" title="New chat">+</button>
+  <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">&#9881;</button>
+</header>
+
+<main id="log" aria-live="polite"></main>
+
+<form id="composer">
+  <textarea id="input" rows="1" placeholder="Message your agent" enterkeyhint="send"></textarea>
+  <button id="send" type="submit" aria-label="Send">&#10148;</button>
+</form>
+
+<dialog id="settings">
+  <div class="sheet">
+    <h2>Settings</h2>
+    <label>OpenRouter API key
+      <input id="keyInput" type="password" placeholder="sk-or-..." autocomplete="off" autocapitalize="off" spellcheck="false">
+      <small>Saved only on this phone. It is sent only to openrouter.ai.</small>
+    </label>
+    <label>Model
+      <input id="modelInput" type="text" placeholder="openai/gpt-4o-mini" autocapitalize="off" spellcheck="false">
+      <small>Must support tool calling. Copy the name from openrouter.ai/models.</small>
+    </label>
+    <label>Agent instructions
+      <textarea id="sysInput" rows="3"></textarea>
+    </label>
+    <div class="row">
+      <button type="button" class="btn danger" id="wipeBtn">Delete notes</button>
+      <button type="button" class="btn" id="closeBtn">Cancel</button>
+      <button type="button" class="btn primary" id="saveBtn">Save</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+// ---------- Storage (safe wrappers) ----------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+const DEFAULT_SYSTEM = "You are a helpful personal assistant on the user's phone. Be concise and clear. Use tools whenever they help, and say plainly when you are unsure.";
+const cfg = {
+  key: store.get("or_key", ""),
+  model: store.get("or_model", "openai/gpt-4o-mini"),
+  system: store.get("or_system", DEFAULT_SYSTEM)
+};
+let history = [];
+try { history = JSON.parse(store.get("or_history", "[]")) || []; } catch (e) { history = []; }
+let busy = false;
+
+// ---------- Tools ----------
+function calculate({ expression }) {
+  const e = String(expression).replace(/\^/g, "**").replace(/x/gi, "*");
+  if (!/^[0-9+\-*/().%\s*]+$/.test(e)) throw new Error("Only numbers and + - * / % ( ) are allowed");
+  const out = Function('"use strict"; return (' + e + ')')();
+  if (typeof out !== "number" || !isFinite(out)) throw new Error("Not a valid result");
+  return String(out);
+}
+function get_time() {
+  return new Date().toLocaleString("en-IN", { dateStyle: "full", timeStyle: "short" });
+}
+function getNotes() { try { return JSON.parse(store.get("or_notes", "[]")) || []; } catch (e) { return []; } }
+function save_note({ text }) {
+  const notes = getNotes();
+  notes.push({ text: String(text), at: new Date().toISOString() });
+  store.set("or_notes", JSON.stringify(notes));
+  return "Saved. You now have " + notes.length + " note(s).";
+}
+function read_notes() {
+  const notes = getNotes();
+  if (!notes.length) return "No notes saved yet.";
+  return notes.map((n, i) => (i + 1) + ". " + n.text + " (" + new Date(n.at).toLocaleString("en-IN") + ")").join("\n");
+}
+const TOOL_FUNCS = { calculate, get_time, save_note, read_notes };
+const TOOLS = [
+  { type: "function", function: { name: "calculate", description: "Evaluate a math expression such as 23*19",
+    parameters: { type: "object", properties: { expression: { type: "string" } }, required: ["expression"] } } },
+  { type: "function", function: { name: "get_time", description: "Get the current date and time on the user's phone",
+    parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "save_note", description: "Save a note or reminder for the user",
+    parameters: { type: "object", properties: { text: { type: "string" } }, required: ["text"] } } },
+  { type: "function", function: { name: "read_notes", description: "Read back all notes the user has saved",
+    parameters: { type: "object", properties: {} } } }
+];
+
+// ---------- UI helpers ----------
+const $ = (id) => document.getElementById(id);
+const log = $("log"), input = $("input"), sendBtn = $("send");
+
+function scrollDown() { log.scrollTop = log.scrollHeight; }
+function addMsg(cls, text) {
+  const d = document.createElement("div");
+  d.className = cls === "tool" ? "tool" : "msg " + cls;
+  d.textContent = text;
+  log.appendChild(d);
+  scrollDown();
+  return d;
+}
+function renderEmpty() {
+  const wrap = document.createElement("div");
+  wrap.className = "empty";
+  wrap.id = "empty";
+  const title = document.createElement("b");
+  title.textContent = "Ask me anything";
+  const sub = document.createElement("span");
+  sub.textContent = "I can do math, tell the time, and keep notes for you.";
+  const tries = document.createElement("div");
+  tries.className = "try";
+  ["What time is it, and what is 23 * 19?", "Save a note: call the bank on Monday", "What notes have I saved?"].forEach((t) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = t;
+    b.onclick = () => { input.value = t; send(); };
+    tries.appendChild(b);
+  });
+  wrap.append(title, sub, tries);
+  log.appendChild(wrap);
+}
+function renderHistory() {
+  log.textContent = "";
+  const visible = history.filter((m) => (m.role === "user") || (m.role === "assistant" && m.content));
+  if (!visible.length) { renderEmpty(); return; }
+  visible.forEach((m) => addMsg(m.role === "user" ? "user" : "bot", m.content));
+}
+function persist() {
+  trim();
+  store.set("or_history", JSON.stringify(history));
+}
+function trim(keep = 40) {
+  if (history.length > keep) {
+    history.splice(0, history.length - keep);
+    while (history.length && history[0].role !== "user") history.shift();
+  }
+}
+function updateDot() { $("dot").classList.toggle("ready", !!cfg.key); }
+
+// ---------- Agent loop ----------
+async function callModel(messages) {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + cfg.key,
+      "Content-Type": "application/json",
+      "HTTP-Referer": location.origin || "https://localhost",
+      "X-Title": "My Agent"
+    },
+    body: JSON.stringify({ model: cfg.model, messages, tools: TOOLS })
+  });
+  if (!res.ok) {
+    let detail = "";
+    try { const j = await res.json(); detail = (j.error && j.error.message) || JSON.stringify(j); } catch (e) {}
+    if (res.status === 401) throw new Error("OpenRouter rejected the key. Check it in Settings.");
+    if (res.status === 402) throw new Error("No credits left. Add credits on openrouter.ai or pick a :free model.");
+    throw new Error("Error " + res.status + ". " + detail);
+  }
+  const data = await res.json();
+  if (!data.choices || !data.choices[0]) throw new Error("Empty reply from the model.");
+  return data.choices[0].message;
+}
+
+async function runAgent(text) {
+  history.push({ role: "user", content: text });
+  for (let step = 0; step < 6; step++) {
+    const msg = await callModel([{ role: "system", content: cfg.system }].concat(history));
+    const entry = { role: "assistant", content: msg.content || "" };
+    if (msg.tool_calls && msg.tool_calls.length) entry.tool_calls = msg.tool_calls;
+    history.push(entry);
+
+    if (!entry.tool_calls) return entry.content || "(no reply)";
+
+    for (const call of entry.tool_calls) {
+      let result;
+      const name = call.function.name;
+      try {
+        const args = JSON.parse(call.function.arguments || "{}");
+        if (!TOOL_FUNCS[name]) throw new Error("Unknown tool");
+        result = TOOL_FUNCS[name](args);
+        addMsg("tool", "Used " + name);
+      } catch (e) {
+        result = "Error: " + e.message;
+        addMsg("tool", name + " failed");
+      }
+      history.push({ role: "tool", tool_call_id: call.id, content: String(result) });
+    }
+  }
+  return "Stopped: too many steps.";
+}
+
+async function send() {
+  const text = input.value.trim();
+  if (!text || busy) return;
+  if (!cfg.key) { openSettings(); return; }
+  const empty = $("empty"); if (empty) empty.remove();
+  input.value = ""; autosize();
+  addMsg("user", text);
+  busy = true; sendBtn.disabled = true;
+  const typing = document.createElement("div");
+  typing.className = "typing"; typing.textContent = "Thinking...";
+  log.appendChild(typing); scrollDown();
+  const before = history.length;
+  try {
+    const reply = await runAgent(text);
+    typing.remove();
+    addMsg("bot", reply);
+    persist();
+  } catch (e) {
+    typing.remove();
+    history.length = before;           // drop the failed turn so the chat stays valid
+    addMsg("err", e.message);
+  } finally {
+    busy = false; sendBtn.disabled = false; input.focus();
+  }
+}
+
+// ---------- Settings ----------
+const dlg = $("settings");
+function openSettings() {
+  $("keyInput").value = cfg.key;
+  $("modelInput").value = cfg.model;
+  $("sysInput").value = cfg.system;
+  dlg.showModal();
+}
+$("settingsBtn").onclick = openSettings;
+$("closeBtn").onclick = () => dlg.close();
+$("saveBtn").onclick = () => {
+  cfg.key = $("keyInput").value.trim();
+  cfg.model = $("modelInput").value.trim() || "openai/gpt-4o-mini";
+  cfg.system = $("sysInput").value.trim() || DEFAULT_SYSTEM;
+  store.set("or_key", cfg.key); store.set("or_model", cfg.model); store.set("or_system", cfg.system);
+  updateDot(); dlg.close();
+};
+$("wipeBtn").onclick = () => { if (confirm("Delete all saved notes?")) store.del("or_notes"); };
+$("clearBtn").onclick = () => {
+  if (busy) return;
+  history = []; store.del("or_history"); renderHistory();
+};
+
+// ---------- Input ----------
+function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; }
+input.addEventListener("input", autosize);
+$("composer").addEventListener("submit", (e) => { e.preventDefault(); send(); });
+
+updateDot();
+renderHistory();
+if (!cfg.key) setTimeout(openSettings, 300);
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
